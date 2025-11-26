@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Joiner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s;
+        }
+
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-box.uploaded {
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        .upload-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .upload-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin: 10px 0;
+        }
+
+        .upload-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-info {
+            margin-top: 15px;
+            text-align: left;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .column-selection {
+            margin-top: 30px;
+        }
+
+        .column-grid {
+            display: grid;
+            grid-template-columns: 45% 10% 45%;
+            gap: 20px;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .column-list {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .column-list h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            position: sticky;
+            top: 0;
+            background: #f8f9ff;
+            padding-bottom: 10px;
+        }
+
+        .column-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .column-item:hover {
+            background: #e8ebff;
+        }
+
+        .column-item.selected {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .mapping-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .mapping-list {
+            background: #f0f1ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mapping-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-mapping {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .join-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .join-controls label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .join-controls select {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 2px solid #667eea;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .preview-section {
+            margin-top: 30px;
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .preview-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f0f1ff;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9ff;
+            border-radius: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            background: #e0e0e0;
+            position: relative;
+            color: #666;
+        }
+
+        .progress-step.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .progress-step.completed {
+            background: #4caf50;
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Excel Joiner</h1>
+        
+        <div class="progress-bar">
+            <div class="progress-step active" id="progress-1">1. Upload Files</div>
+            <div class="progress-step" id="progress-2">2. Select Columns</div>
+            <div class="progress-step" id="progress-3">3. Join & Preview</div>
+            <div class="progress-step" id="progress-4">4. Download</div>
+        </div>
+
+        <!-- Step 1: Upload Files -->
+        <div id="step1" class="step active">
+            <div class="upload-section">
+                <div class="upload-box" id="left-upload-box">
+                    <h3>Left File</h3>
+                    <input type="file" id="leftFile" accept=".xlsx,.xls,.csv" style="display:none">
+                    <button class="upload-btn" onclick="document.getElementById('leftFile').click()">
+                        Choose File
+                    </button>
+                    <div class="file-info" id="left-info"></div>
+                </div>
+                
+                <div class="upload-box" id="right-upload-box">
+                    <h3>Right File</h3>
+                    <input type="file" id="rightFile" accept=".xlsx,.xls,.csv" style="display:none">
+                    <button class="upload-btn" onclick="document.getElementById('rightFile').click()">
+                        Choose File
+                    </button>
+                    <div class="file-info" id="right-info"></div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="proceedToColumns" disabled>
+                    Next: Select Columns →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Column Selection -->
+        <div id="step2" class="step">
+            <h2 style="text-align:center; color:#667eea; margin-bottom:20px">Select Matching Columns</h2>
+            <p style="text-align:center; color:#666; margin-bottom:30px">
+                Click columns from both files to create join mappings. You can select multiple column pairs.
+            </p>
+            
+            <div id="mappings" class="mapping-list" style="display:none">
+                <h4>Column Mappings:</h4>
+                <div id="mappingItems"></div>
+            </div>
+            
+            <div class="column-grid">
+                <div class="column-list">
+                    <h4>Left File Columns</h4>
+                    <div id="leftColumns"></div>
+                </div>
+                
+                <div class="mapping-indicator">
+                    <div style="font-size:30px">⟷</div>
+                    <p>Select columns from both sides</p>
+                </div>
+                
+                <div class="column-list">
+                    <h4>Right File Columns</h4>
+                    <div id="rightColumns"></div>
+                </div>
+            </div>
+            
+            <div class="join-controls">
+                <label for="joinType">Join Type:</label>
+                <select id="joinType">
+                    <option value="inner">Inner Join</option>
+                    <option value="left">Left Join</option>
+                    <option value="right">Right Join</option>
+                    <option value="outer">Outer Join</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goToStep(1)">← Back</button>
+                <button class="btn-primary" id="performJoin" disabled>Perform Join →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Preview -->
+        <div id="step3" class="step">
+            <h2 style="text-align:center; color:#667eea; margin-bottom:20px">Join Preview</h2>
+            
+            <div id="joinResult"></div>
+            
+            <div class="preview-section" id="previewSection" style="display:none">
+                <h3>Data Preview (First 5 rows)</h3>
+                <div style="overflow-x:auto">
+                    <table id="previewTable"></table>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goToStep(2)">← Back</button>
+                <button class="btn-primary" id="proceedToDownload" style="display:none">
+                    Next: Select Columns →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Download -->
+        <div id="step4" class="step">
+            <h2 style="text-align:center; color:#667eea; margin-bottom:20px">Select Columns to Export</h2>
+            
+            <div style="margin:20px 0; text-align:center">
+                <button class="btn-secondary" onclick="selectAllColumns(true)">Select All</button>
+                <button class="btn-secondary" onclick="selectAllColumns(false)">Deselect All</button>
+            </div>
+            
+            <div class="checkbox-grid" id="columnCheckboxes"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goToStep(3)">← Back</button>
+                <button class="btn-primary" id="downloadBtn">Download Excel File</button>
+                <button class="btn-secondary" onclick="resetApp()">Start Over</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top:10px">Processing...</p>
+        </div>
+    </div>
+
+    <script>
+        let leftColumns = [];
+        let rightColumns = [];
+        let selectedLeft = null;
+        let selectedRight = null;
+        let mappings = [];
+        let joinedColumns = [];
+
+        // File upload handlers
+        document.getElementById('leftFile').addEventListener('change', (e) => uploadFile(e, 'left'));
+        document.getElementById('rightFile').addEventListener('change', (e) => uploadFile(e, 'right'));
+
+        async function uploadFile(event, fileType) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_type', fileType);
+
+            showLoading(true);
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showAlert(data.error, 'error');
+                    return;
+                }
+
+                displayFileInfo(data, fileType);
+                checkBothFilesUploaded();
+            } catch (error) {
+                showAlert('Upload failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayFileInfo(data, fileType) {
+            const infoDiv = document.getElementById(`${fileType}-info`);
+            const uploadBox = document.getElementById(`${fileType}-upload-box`);
+            
+            infoDiv.innerHTML = `
+                <h4>${data.filename}</h4>
+                <p><strong>Columns:</strong> ${data.columns.length}</p>
+                <p><strong>Rows:</strong> ${data.rows}</p>
+                <p style="font-size:12px; color:#666">${data.columns.slice(0, 5).join(', ')}${data.columns.length > 5 ? '...' : ''}</p>
+            `;
+            infoDiv.classList.add('show');
+            uploadBox.classList.add('uploaded');
+        }
+
+        function checkBothFilesUploaded() {
+            const leftUploaded = document.getElementById('left-info').classList.contains('show');
+            const rightUploaded = document.getElementById('right-info').classList.contains('show');
+            
+            if (leftUploaded && rightUploaded) {
+                document.getElementById('proceedToColumns').disabled = false;
+            }
+        }
+
+        document.getElementById('proceedToColumns').addEventListener('click', async () => {
+            showLoading(true);
+            try {
+                const response = await fetch('/get_columns');
+                const data = await response.json();
+                
+                if (data.error) {
+                    showAlert(data.error, 'error');
+                    return;
+                }
+
+                leftColumns = data.left_columns;
+                rightColumns = data.right_columns;
+                displayColumns();
+                goToStep(2);
+            } catch (error) {
+                showAlert('Failed to load columns: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function displayColumns() {
+            const leftDiv = document.getElementById('leftColumns');
+            const rightDiv = document.getElementById('rightColumns');
+            
+            leftDiv.innerHTML = leftColumns.map((col, idx) => 
+                `<div class="column-item" data-side="left" data-col="${col}" onclick="selectColumn('left', '${col}', this)">
+                    ${col}
+                </div>`
+            ).join('');
+            
+            rightDiv.innerHTML = rightColumns.map((col, idx) => 
+                `<div class="column-item" data-side="right" data-col="${col}" onclick="selectColumn('right', '${col}', this)">
+                    ${col}
+                </div>`
+            ).join('');
+        }
+
+        function selectColumn(side, column, element) {
+            // Deselect previous selection on this side
+            document.querySelectorAll(`.column-item[data-side="${side}"]`).forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+            
+            if (side === 'left') {
+                selectedLeft = column;
+            } else {
+                selectedRight = column;
+            }
+            
+            // If both sides selected, add mapping
+            if (selectedLeft && selectedRight) {
+                addMapping(selectedLeft, selectedRight);
+                selectedLeft = null;
+                selectedRight = null;
+                
+                // Deselect all
+                document.querySelectorAll('.column-item').forEach(el => {
+                    el.classList.remove('selected');
+                });
+            }
+        }
+
+        function addMapping(left, right) {
+            // Check if mapping already exists
+            const exists = mappings.some(m => m.left === left && m.right === right);
+            if (exists) {
+                showAlert('This mapping already exists', 'warning');
+                return;
+            }
+            
+            mappings.push({ left, right });
+            updateMappingDisplay();
+            document.getElementById('performJoin').disabled = false;
+        }
+
+        function updateMappingDisplay() {
+            const mappingDiv = document.getElementById('mappings');
+            const itemsDiv = document.getElementById('mappingItems');
+            
+            if (mappings.length === 0) {
+                mappingDiv.style.display = 'none';
+                return;
+            }
+            
+            mappingDiv.style.display = 'block';
+            itemsDiv.innerHTML = mappings.map((m, idx) => `
+                <div class="mapping-item">
+                    <span><strong>${m.left}</strong> ⟷ <strong>${m.right}</strong></span>
+                    <button class="remove-mapping" onclick="removeMapping(${idx})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function removeMapping(index) {
+            mappings.splice(index, 1);
+            updateMappingDisplay();
+            if (mappings.length === 0) {
+                document.getElementById('performJoin').disabled = true;
+            }
+        }
+
+        document.getElementById('performJoin').addEventListener('click', async () => {
+            if (mappings.length === 0) {
+                showAlert('Please select at least one column mapping', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                const response = await fetch('/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        left_columns: mappings.map(m => m.left),
+                        right_columns: mappings.map(m => m.right),
+                        join_type: document.getElementById('joinType').value
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    showAlert(data.error, 'error');
+                    return;
+                }
+                
+                if (data.warning) {
+                    showAlert(data.warning, 'warning');
+                    return;
+                }
+
+                joinedColumns = data.columns;
+                displayJoinResult(data);
+                goToStep(3);
+            } catch (error) {
+                showAlert('Join failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function displayJoinResult(data) {
+            const resultDiv = document.getElementById('joinResult');
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✓ Join successful! ${data.rows} rows, ${data.columns.length} columns
+                </div>
+            `;
+            
+            const previewTable = document.getElementById('previewTable');
+            let tableHTML = '<thead><tr>';
+            data.columns.forEach(col => {
+                tableHTML += `<th>${col}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+            
+            data.preview.forEach(row => {
+                tableHTML += '<tr>';
+                data.columns.forEach(col => {
+                    tableHTML += `<td>${row[col] !== null && row[col] !== undefined ? row[col] : ''}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody>';
+            
+            previewTable.innerHTML = tableHTML;
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('proceedToDownload').style.display = 'inline-block';
+        }
+
+        document.getElementById('proceedToDownload').addEventListener('click', () => {
+            displayColumnCheckboxes();
+            goToStep(4);
+        });
+
+        function displayColumnCheckboxes() {
+            const checkboxDiv = document.getElementById('columnCheckboxes');
+            checkboxDiv.innerHTML = joinedColumns.map(col => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="col_${col}" value="${col}" checked>
+                    <label for="col_${col}">${col}</label>
+                </div>
+            `).join('');
+        }
+
+        function selectAllColumns(select) {
+            document.querySelectorAll('#columnCheckboxes input[type="checkbox"]').forEach(cb => {
+                cb.checked = select;
+            });
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            const selected = Array.from(document.querySelectorAll('#columnCheckboxes input:checked'))
+                .map(cb => cb.value);
+            
+            if (selected.length === 0) {
+                showAlert('Please select at least one column', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ selected_columns: selected })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showAlert(data.error, 'error');
+                    return;
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'joined_output.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showAlert('File downloaded successfully!', 'success');
+            } catch (error) {
+                showAlert('Download failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function goToStep(stepNum) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${stepNum}`).classList.add('active');
+            
+            // Update progress bar
+            for (let i = 1; i <= 4; i++) {
+                const progressStep = document.getElementById(`progress-${i}`);
+                progressStep.classList.remove('active', 'completed');
+                if (i < stepNum) {
+                    progressStep.classList.add('completed');
+                } else if (i === stepNum) {
+                    progressStep.classList.add('active');
+                }
+            }
+            
+            window.scrollTo(0, 0);
+        }
+
+        async function resetApp() {
+            if (!confirm('Are you sure you want to start over? All progress will be lost.')) {
+                return;
+            }
+            
+            await fetch('/reset', { method: 'POST' });
+            location.reload();
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '1000';
+            alertDiv.style.minWidth = '300px';
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+    </script>
+</body>
+</html>
